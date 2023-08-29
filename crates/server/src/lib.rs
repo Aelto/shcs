@@ -7,8 +7,12 @@ mod v1;
 
 pub use storage::StorageError;
 
-pub async fn launch_server(port: u16, password: String) -> Result<(), storage::StorageError> {
-    storage::initialize("buckets", None)?;
+pub async fn launch_server(
+    port: u16,
+    buckets_folder: impl Into<std::path::PathBuf>,
+    password: String,
+) -> Result<(), storage::StorageError> {
+    storage::initialize(buckets_folder, None)?;
 
     let _ = HttpServer::new(move || {
         let logger = Logger::default();
