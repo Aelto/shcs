@@ -15,7 +15,7 @@ impl FromRequest for BearerPassword {
             .map(|ad| ad.password.clone());
 
         Box::pin(async move {
-            match (dbg!(password), dbg!(authorization_header)) {
+            match (password, authorization_header) {
                 (Some(password), Some(header)) => {
                     let request_password = header.to_str().unwrap_or_default();
 
