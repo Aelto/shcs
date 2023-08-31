@@ -47,8 +47,8 @@ pub struct AppData {
 
 pub async fn upload_file(
   MultipartForm(form): MultipartForm<UploadFileBody>, _: BearerPassword,
-) -> Result<HttpResponse, Box<dyn std::error::Error>> {
-  let (metadata, unique_id, tempfile) = form.into_metadata();
+) -> Result<HttpResponse, ApiError> {
+  let (metadata, unique_id, tempfile) = form.into_metadata(&storage::internal::active_bucket()?)?;
 
   let storage_path =
     actix_web::web::block(move || storage::persist_tempfile(&unique_id, tempfile.file, metadata))
@@ -59,12 +59,12 @@ pub async fn upload_file(
 
 pub async fn replace_file_in_active_bucket(
   path: Path<String>, MultipartForm(form): MultipartForm<UploadFileBody>, _: BearerPassword,
-) -> Result<HttpResponse, Box<dyn std::error::Error>> {
-  let (metadata, _, tempfile) = form.into_metadata();
+) -> Result<HttpResponse, ApiError> {
+  let bucket = storage::internal::active_bucket()?;
+  let (metadata, _, tempfile) = form.into_metadata(&bucket)?;
   let item = path.into_inner();
 
   let storage_path = actix_web::web::block(move || {
-    let bucket = storage::internal::active_bucket()?;
     let storage_path = storage::internal::storage_path(&bucket, &item);
 
     storage::replace_tempfile(&storage_path, tempfile.file, metadata)
@@ -77,9 +77,9 @@ pub async fn replace_file_in_active_bucket(
 pub async fn replace_file(
   path: Path<(String, String)>, MultipartForm(form): MultipartForm<UploadFileBody>,
   _: BearerPassword,
-) -> Result<HttpResponse, Box<dyn std::error::Error>> {
-  let (metadata, _, tempfile) = form.into_metadata();
+) -> Result<HttpResponse, ApiError> {
   let (bucket, item) = path.into_inner();
+  let (metadata, _, tempfile) = form.into_metadata(&bucket)?;
 
   let storage_path = actix_web::web::block(move || {
     let storage_path = storage::internal::storage_path(&bucket, &item);
