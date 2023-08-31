@@ -33,7 +33,4 @@ pub use crate::storage::remove;
 pub use crate::storage::replace_tempfile;
 pub use crate::storage::write;
 
-pub use crate::storage::internal::bucket_and_item;
-pub use crate::storage::internal::set_metadata;
-pub use crate::storage::internal::storage_path;
-pub use crate::storage::internal::write_exact;
+pub use crate::storage::internal;

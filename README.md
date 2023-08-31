@@ -19,7 +19,8 @@ the credentials will be to access the non public endpoints of the API.
 
 - auth protected endpoints:
   - upload a file, `PUT /v1/`
-  - replace a file, `POST /v1/{bucket}/{item}`
+  - replace or upload a file in the given bucket, and with a specified filename, `POST /v1/{bucket}/{item}`
+  - replace or upload a file in the currently active bucket, and with a specified filename, `POST /v1/active/{item}`
   - delete a file, `DELETE /v1/{bucket}/{item}`
   - get a file's metadata, `GET /v1/{bucket}/{item}/metadata`
 - public endpoints:

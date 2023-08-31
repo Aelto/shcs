@@ -132,8 +132,8 @@ where
   Ok(storage_path)
 }
 
-/// Internal functions that can be used to precisely control the storage to
-/// circumvent some of the automatic behaviours of the storage system.
+/// Internal functions that can be used to precisely control the storage system &
+/// circumvent some of the automatic behaviours.
 pub mod internal {
   use std::path::PathBuf;
 
@@ -143,6 +143,11 @@ pub mod internal {
   use super::StorageError;
 
   use super::config;
+
+  /// Get the name of the currently active bucket
+  pub fn active_bucket<'a>() -> Result<String> {
+    config()?.with_bucket()
+  }
 
   /// Parses and returns the `bucket` and the `item` name from the provided
   /// `storage_path`
