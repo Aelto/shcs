@@ -56,7 +56,7 @@ where
   Ok(metadata)
 }
 
-/// Returns whether given path points to an existing item.
+/// Returns whether the given path points to an existing item.
 ///
 /// A storage path consists of a string, split by a `/` where the left side
 /// is the bucket_name and the right side is the filename: `qsdo34-23d/filename.md`
