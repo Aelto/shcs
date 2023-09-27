@@ -14,12 +14,23 @@ impl UploadFileBody {
     let user_filename = self.file.file_name.clone();
     let unique_id = Self::next_unique_id(bucket)?;
 
+    let mut filename = unique_id.clone();
+    if let Some(name) = user_filename.as_ref() {
+      let user_extension = std::path::Path::new(&name).extension();
+      if let Some(ext) = user_extension {
+        if let Some(ext) = ext.to_str() {
+          filename.push('.');
+          filename.push_str(ext);
+        }
+      }
+    }
+
     let metadata = super::Metadata {
-      alias: user_filename.unwrap_or_else(|| unique_id.clone()),
+      alias: user_filename.unwrap_or_else(|| unique_id),
       custom: self.metadata.map(|j| j.0),
     };
 
-    Ok((metadata, unique_id, self.file))
+    Ok((metadata, filename, self.file))
   }
 
   fn next_unique_id(bucket: &str) -> Result<String, super::ApiError> {
