@@ -2,9 +2,15 @@ use shcs::server::launch_server;
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-  println!("starting server at http://localhost:3000");
+  dotenvy::dotenv().expect(".env error");
+  let port = dotenvy::var("port")
+    .expect("failed to get env port")
+    .parse()
+    .expect("invalid port number");
 
-  launch_server(3000, "buckets", "pass123".to_owned()).await?;
+  println!("starting server at http://localhost:{port}");
+
+  launch_server(port, "buckets").await?;
 
   Ok(())
 }
