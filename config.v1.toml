@@ -1,0 +1,3 @@
+enabled = true
+authentication_endpoint = "http://localhost:3000/v1/s3/auth"
+completion_endpoint = "http://localhost:3000/v1/s3/finish"

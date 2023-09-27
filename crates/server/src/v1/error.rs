@@ -9,18 +9,40 @@ pub enum ApiError {
 
 impl From<storage::StorageError> for ApiError {
   fn from(value: storage::StorageError) -> Self {
+    println!("storage error: {value}");
+
     Self::Storage(value)
   }
 }
 
 impl From<std::io::Error> for ApiError {
   fn from(value: std::io::Error) -> Self {
+    println!("io error: {value}");
+
     Self::Storage(storage::StorageError::Io(value))
   }
 }
 
 impl From<actix_web::error::BlockingError> for ApiError {
   fn from(value: actix_web::error::BlockingError) -> Self {
+    println!("actix blocking error: {value}");
+
+    Self::InternalServerError
+  }
+}
+
+impl From<toml::de::Error> for ApiError {
+  fn from(value: toml::de::Error) -> Self {
+    println!("v1 config deserialize error: {value}");
+
+    Self::InternalServerError
+  }
+}
+
+impl From<reqwest::Error> for ApiError {
+  fn from(value: reqwest::Error) -> Self {
+    println!("reqwest error: {value}");
+
     Self::InternalServerError
   }
 }

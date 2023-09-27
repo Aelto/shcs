@@ -11,19 +11,30 @@ use actix_web::HttpResponse;
 
 use actix_multipart::form::MultipartForm;
 
+mod config;
+use config::Config;
+
 mod metadata;
 use metadata::Metadata;
 
 mod error;
-use error::ApiError;
+pub use error::ApiError;
 
-mod bearer_password;
-use bearer_password::BearerPassword;
+mod bearer_token;
+use bearer_token::BearerToken;
 
 mod upload_body;
 use upload_body::UploadFileBody;
 
+pub mod sdk;
+
 pub fn router(cfg: &mut web::ServiceConfig) {
+  if !Config::enabled().unwrap_or_default() {
+    println!("INFO: v1 api disabled");
+
+    return;
+  }
+
   cfg
     .route("", put().to(upload_file))
     .route(
@@ -37,29 +48,30 @@ pub fn router(cfg: &mut web::ServiceConfig) {
       "/{bucket}/{filename}/metadata",
       post().to(set_file_metadata),
     )
-    .service(actix_files::Files::new("/", "buckets"))
-    .route("/{bucket}/{filename}", delete().to(delete_file));
+    .route("/{bucket}/{filename}", delete().to(delete_file))
+    .service(actix_files::Files::new("/", "buckets"));
 }
 
-pub struct AppData {
-  pub password: String,
-}
-
-pub async fn upload_file(
-  MultipartForm(form): MultipartForm<UploadFileBody>, _: BearerPassword,
+async fn upload_file(
+  MultipartForm(form): MultipartForm<UploadFileBody>, token: BearerToken,
 ) -> Result<HttpResponse, ApiError> {
+  let identifier = token.authenticate(sdk::Operation::Upload).await?;
+
   let (metadata, unique_id, tempfile) = form.into_metadata(&storage::internal::active_bucket()?)?;
 
   let storage_path =
     actix_web::web::block(move || storage::persist_tempfile(&unique_id, tempfile.file, metadata))
       .await??;
 
-  return Ok(HttpResponse::Created().json(storage_path));
+  token.complete(identifier).await?;
+  Ok(HttpResponse::Created().body(storage_path))
 }
 
-pub async fn replace_file_in_active_bucket(
-  path: Path<String>, MultipartForm(form): MultipartForm<UploadFileBody>, _: BearerPassword,
+async fn replace_file_in_active_bucket(
+  path: Path<String>, MultipartForm(form): MultipartForm<UploadFileBody>, token: BearerToken,
 ) -> Result<HttpResponse, ApiError> {
+  let identifier = token.authenticate(sdk::Operation::ReplaceActive).await?;
+
   let bucket = storage::internal::active_bucket()?;
   let (metadata, _, tempfile) = form.into_metadata(&bucket)?;
   let item = path.into_inner();
@@ -71,13 +83,16 @@ pub async fn replace_file_in_active_bucket(
   })
   .await??;
 
-  return Ok(HttpResponse::Created().json(storage_path));
+  token.complete(identifier).await?;
+  Ok(HttpResponse::Created().body(storage_path))
 }
 
-pub async fn replace_file(
+async fn replace_file(
   path: Path<(String, String)>, MultipartForm(form): MultipartForm<UploadFileBody>,
-  _: BearerPassword,
+  token: BearerToken,
 ) -> Result<HttpResponse, ApiError> {
+  let identifier = token.authenticate(sdk::Operation::Replace).await?;
+
   let (bucket, item) = path.into_inner();
   let (metadata, _, tempfile) = form.into_metadata(&bucket)?;
 
@@ -88,10 +103,11 @@ pub async fn replace_file(
   })
   .await??;
 
-  return Ok(HttpResponse::Created().json(storage_path));
+  token.complete(identifier).await?;
+  Ok(HttpResponse::Created().body(storage_path))
 }
 
-pub async fn serve_aliased_file(
+async fn serve_aliased_file(
   path: Path<(String, String)>,
 ) -> Result<actix_files::NamedFile, ApiError> {
   let (bucket, item) = path.into_inner();
@@ -116,9 +132,11 @@ pub async fn serve_aliased_file(
   )
 }
 
-pub async fn set_file_metadata(
-  path: Path<(String, String)>, custom: Option<Json<serde_json::Value>>, _: BearerPassword,
+async fn set_file_metadata(
+  path: Path<(String, String)>, custom: Option<Json<serde_json::Value>>, token: BearerToken,
 ) -> Result<HttpResponse, ApiError> {
+  let identifier = token.authenticate(sdk::Operation::MetadataSet).await?;
+
   let (bucket, item) = path.into_inner();
   let custom = custom.map(|c| c.into_inner());
 
@@ -127,26 +145,33 @@ pub async fn set_file_metadata(
   let metadata = metadata.map(|m| Metadata { custom, ..m });
   storage::internal::set_metadata(&storage_path, metadata)?;
 
+  token.complete(identifier).await?;
   Ok(HttpResponse::Ok().finish())
 }
 
-pub async fn get_file_metadata(
-  path: Path<(String, String)>, _: BearerPassword,
+async fn get_file_metadata(
+  path: Path<(String, String)>, token: BearerToken,
 ) -> Result<HttpResponse, ApiError> {
+  let identifier = token.authenticate(sdk::Operation::MetadataGet).await?;
+
   let (bucket, item) = path.into_inner();
   let storage_path = storage::internal::storage_path(&bucket, &item);
   let metadata: Option<Metadata> = storage::deserialize_metadata(&storage_path)?;
 
+  token.complete(identifier).await?;
   Ok(HttpResponse::Ok().json(metadata.and_then(|m| m.custom)))
 }
 
-pub async fn delete_file(
-  path: Path<(String, String)>, _: BearerPassword,
+async fn delete_file(
+  path: Path<(String, String)>, token: BearerToken,
 ) -> Result<HttpResponse, ApiError> {
+  let identifier = token.authenticate(sdk::Operation::Delete).await?;
+
   let (bucket, item) = path.into_inner();
   let storage_path = storage::internal::storage_path(&bucket, &item);
 
   storage::remove(&storage_path)?;
 
+  token.complete(identifier).await?;
   Ok(HttpResponse::Ok().finish())
 }

@@ -1,28 +1,41 @@
 # shcs
+
 An easy to setup self-hosted bucket cloud storage with the ability to store
 extra information alongside the entries
 
 # sub-crates
+
 The project is split into two sub-crates:
+
 - [`storage`](/crates/storage/) offers direct access to the internal storage library used by the
-storage server.
+  storage server.
 - [`server`](/crates/server/) offers a configurable Actix web server to launch an instance of the
-storage server with custom values for where the buckets will be stored and what
-the credentials will be to access the non public endpoints of the API.
+  storage server with custom values for where the buckets will be stored and what
+  the credentials will be to access the non public endpoints of the API.
+  - [`server::v1::sdk`](/crates/server/src/v1/sdk/) offers data types used by the v1 API endpoints
 
 # Server API
-> The API is versioned for backward compatibility
-
 ## v1
-> auth protected endpoints require the server password (provided during server launch)
-> to be added to the `Authorization` header.
 
-- auth protected endpoints:
-  - upload a file, `PUT /v1/`
-  - replace or upload a file in the given bucket, and with a specified filename, `POST /v1/{bucket}/{item}`
-  - replace or upload a file in the currently active bucket, and with a specified filename, `POST /v1/active/{item}`
-  - delete a file, `DELETE /v1/{bucket}/{item}`
-  - get a file's metadata, `GET /v1/{bucket}/{item}/metadata`
-- public endpoints:
-  - get a file under its alias (if provided during creation), `GET /v1/{bucket}/{item}/aliased`
-  - get a file, `GET /v1/{bucket}/{item}`
+## Public endpoints
+| endpoint                          | description                                                                                 |
+|---------------------------------- |---------------------------------------------------------------------------------------------|
+| `GET /v1/{bucket}/{item}`         | get file                                                                                    |
+| `GET /v1/{bucket}/{item}/aliased` | get file, and if provided during upload set the alias header instead of using the item UUID |
+
+## Protected endpoints
+
+Protected endpoints expect an `Authorization` header that will be forwarded as a
+POST request to configured `authentication_endpoint` address in the `config.v1.toml`
+file. Each endpoint also sets the body of the authentication request to a unique
+value so the authentication endpoint is able to identify the operation that is
+being performed.
+
+| endpoint                            | description                                                                              | authentication body (serialized to strings)            |
+|-------------------------------------|------------------------------------------------------------------------------------------|---------------------------------|
+| `PUT /v1/`                          | upload file                                                                              | `sdk::Operation::Upload`        |
+| `POST /v1/{bucket}/{item}`          | replace or upload a file in the given bucket, and with the specified filename            | `sdk::Operation::Replace`       |
+| `POST /v1/active/{item}`            | replace or upload a file in the currently active bucket, and with the specified filename | `sdk::Operation::ReplaceActive` |
+| `POST /v1/{bucket}/{item}/metadata` | set file's metadata                                                                      | `sdk::Operation::MetadataSet`   |
+| `GET /v1/{bucket}/{item}/metadata`  | get file's metadata                                                                      | `sdk::Operation::MetadataGet`   |
+| `DELETE /v1/{bucket}/{item}`        | delete file                                                                              | `sdk::Operation::Delete`        |
