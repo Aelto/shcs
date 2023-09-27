@@ -46,18 +46,18 @@ impl BearerToken {
   /// Any error or any response other than a 200: OK yields an UNAUTHORIZED
   /// error.
   pub async fn authenticate(
-    &self, action: super::sdk::Operation,
+    &self, config: &Config, action: super::sdk::Operation,
   ) -> Result<AuthenticatedBearerIdentifier, ApiError> {
-    match self.is_authorized(action).await {
+    match self.is_authorized(config, action).await {
       Ok(Some(identifier)) => Ok(identifier),
       _ => Err(ApiError::Unauthorized),
     }
   }
 
   async fn is_authorized(
-    &self, action: super::sdk::Operation,
+    &self, config: &Config, action: super::sdk::Operation,
   ) -> Result<Option<AuthenticatedBearerIdentifier>, ApiError> {
-    let url = Config::authentication_endpoint()?;
+    let url = config.authentication_endpoint();
 
     let mut headers = reqwest::header::HeaderMap::new();
     headers.append("Authorization", self.authorization.clone());
@@ -68,7 +68,7 @@ impl BearerToken {
     let resp = client.post(url).body(body).headers(headers).send().await?;
 
     // any other status than 200 is considered to be UNAUTHORIZED
-    let authorized = dbg!(resp.status()) == reqwest::StatusCode::OK;
+    let authorized = resp.status() == reqwest::StatusCode::OK;
 
     // expect the authentication endpoint to return some sort of identifier uuid
     let identifier = match authorized {
@@ -79,11 +79,14 @@ impl BearerToken {
     Ok(identifier.map(|s| AuthenticatedBearerIdentifier(s)))
   }
 
-  pub async fn complete(self, identifier: AuthenticatedBearerIdentifier) -> Result<(), ApiError> {
+  pub async fn complete(
+    self, config: &Config, identifier: AuthenticatedBearerIdentifier,
+  ) -> Result<(), ApiError> {
     async fn internal(
-      authorization: reqwest::header::HeaderValue, identifier: AuthenticatedBearerIdentifier,
+      config: &Config, authorization: reqwest::header::HeaderValue,
+      identifier: AuthenticatedBearerIdentifier,
     ) -> Result<(), ApiError> {
-      let url = Config::completion_endpoint()?;
+      let url = config.completion_endpoint();
 
       let mut headers = reqwest::header::HeaderMap::new();
       headers.append("Authorization", authorization);
@@ -96,7 +99,7 @@ impl BearerToken {
     }
 
     // catch any kind of error that may happen:
-    match internal(self.authorization, identifier.clone()).await {
+    match internal(config, self.authorization, identifier.clone()).await {
       Err(e) => {
         println!("{identifier:?} error: {e:?}");
       }

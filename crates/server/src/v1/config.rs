@@ -25,11 +25,11 @@ impl Config {
     Self::from_disk().map(|c| c.enabled)
   }
 
-  pub fn authentication_endpoint() -> Result<String, ApiError> {
-    Self::from_disk().map(|c| c.authentication_endpoint)
+  pub fn authentication_endpoint(&self) -> &str {
+    &self.authentication_endpoint
   }
 
-  pub fn completion_endpoint() -> Result<String, ApiError> {
-    Self::from_disk().map(|c| c.completion_endpoint)
+  pub fn completion_endpoint(&self) -> &str {
+    &self.completion_endpoint
   }
 }
