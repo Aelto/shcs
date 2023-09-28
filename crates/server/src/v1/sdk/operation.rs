@@ -1,5 +1,5 @@
 /// Describes the attempt to perform an operation
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 #[repr(usize)]
 pub enum Operation {
   Upload = 0,

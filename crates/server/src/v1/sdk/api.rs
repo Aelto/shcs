@@ -43,7 +43,7 @@ pub async fn upload_file(
   }
 
   let response = reqwest::Client::new()
-    .put(dbg!(url))
+    .put(url)
     .multipart(form)
     .header("Authorization", authorization)
     .send()
@@ -64,7 +64,7 @@ pub async fn get_file(
 ) -> Result<reqwest::Response, Error> {
   let storage_path = storage::internal::storage_path(bucket, item);
   let url = UrlBuilder::new(domain).join(&storage_path).ok()?;
-  let req = client.get(dbg!(url));
+  let req = client.get(url);
   let res = req.send().await?;
 
   let status = res.status();

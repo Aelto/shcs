@@ -65,7 +65,13 @@ impl BearerToken {
     let body = serde_json::to_string(&action).map_err(|_| ApiError::InternalServerError)?;
 
     let client = reqwest::Client::new();
-    let resp = client.post(url).body(body).headers(headers).send().await?;
+    let resp = client
+      .post(url)
+      .body(body)
+      .headers(headers)
+      .header("Content-Type", "application/json")
+      .send()
+      .await?;
 
     // any other status than 200 is considered to be UNAUTHORIZED
     let authorized = resp.status() == reqwest::StatusCode::OK;
@@ -85,7 +91,7 @@ impl BearerToken {
     async fn internal(
       config: &Config, authorization: reqwest::header::HeaderValue,
       identifier: AuthenticatedBearerIdentifier,
-    ) -> Result<(), ApiError> {
+    ) -> Result<reqwest::Response, ApiError> {
       let url = config.completion_endpoint();
 
       let mut headers = reqwest::header::HeaderMap::new();
@@ -93,9 +99,15 @@ impl BearerToken {
 
       let body = identifier.0;
       let client = reqwest::Client::new();
-      let _resp = client.post(url).body(body).headers(headers).send().await?;
+      let resp = client
+        .post(url)
+        .body(body)
+        .headers(headers)
+        .header("Content-Type", "application/json")
+        .send()
+        .await?;
 
-      Ok(())
+      Ok(resp)
     }
 
     // catch any kind of error that may happen:
@@ -103,7 +115,7 @@ impl BearerToken {
       Err(e) => {
         println!("{identifier:?} error: {e:?}");
       }
-      _ => {}
+      Ok(_resp) => {}
     };
 
     Ok(())
