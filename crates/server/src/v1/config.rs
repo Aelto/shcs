@@ -16,7 +16,7 @@ pub struct Config {
 impl Config {
   /// Obtain a version of the configuration file from the disk
   pub fn from_disk() -> Result<Self, ApiError> {
-    let content = std::fs::read_to_string("config.v1.toml")?;
+    let content = std::fs::read_to_string("v1.shcs.toml")?;
 
     Ok(toml::from_str(&content)?)
   }
