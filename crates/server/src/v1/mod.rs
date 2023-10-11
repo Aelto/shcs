@@ -53,7 +53,10 @@ pub fn router(cfg: &mut web::ServiceConfig) {
       post().to(set_file_metadata),
     )
     .route("/{bucket}/{filename}", delete().to(delete_file))
-    .service(actix_files::Files::new("/", "buckets"));
+    .service(actix_files::Files::new(
+      "/",
+      storage::internal::root().expect("failure getting storage root path"),
+    ));
 }
 
 async fn upload_file(

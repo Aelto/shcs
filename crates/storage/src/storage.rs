@@ -149,6 +149,11 @@ pub mod internal {
     config()?.with_bucket()
   }
 
+  /// Get the path to the storage's root directory
+  pub fn root<'a>() -> Result<&'a PathBuf> {
+    Ok(&config()?.root)
+  }
+
   /// Parses and returns the `bucket` and the `item` name from the provided
   /// `storage_path`
   pub fn bucket_and_item(storage_path: &str) -> Result<(&str, &str)> {
