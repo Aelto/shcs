@@ -62,7 +62,10 @@ impl BearerToken {
     let mut headers = reqwest::header::HeaderMap::new();
     headers.append("Authorization", self.authorization.clone());
 
+    let uuid = self.uuid();
     let body = serde_json::to_string(&action).map_err(|_| ApiError::InternalServerError)?;
+
+    println!("{} - {} - 1/2 - authenticating", uuid, action);
 
     let client = reqwest::Client::new();
     let resp = client
@@ -73,8 +76,14 @@ impl BearerToken {
       .send()
       .await?;
 
+    let status = resp.status();
+    println!(
+      "{} - {} - 2/2 - request succes, status={}",
+      uuid, action, status
+    );
+
     // any other status than 200 is considered to be UNAUTHORIZED
-    let authorized = resp.status() == reqwest::StatusCode::OK;
+    let authorized = status == reqwest::StatusCode::OK;
 
     // expect the authentication endpoint to return some sort of identifier uuid
     let identifier = match authorized {
@@ -119,5 +128,10 @@ impl BearerToken {
     };
 
     Ok(())
+  }
+
+  /// Generate a uuid to uniquely identify this token during the various authentication logs
+  fn uuid(&self) -> String {
+    nanoid::nanoid!()
   }
 }
