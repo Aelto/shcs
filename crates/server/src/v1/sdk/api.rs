@@ -56,6 +56,41 @@ pub async fn upload_file(
   }
 }
 
+/// Replace the file at the provided storage path
+pub async fn replace_file(
+  domain: &str, authorization: String, file: Vec<u8>, filename: Option<String>,
+  metadata: Option<impl serde::Serialize>, storage_path: &str,
+) -> Result<String, Error> {
+  let url = UrlBuilder::new(domain).join(storage_path).ok()?;
+  let mut filepart = reqwest::multipart::Part::stream(file);
+
+  if let Some(filename) = filename {
+    filepart = filepart.file_name(filename);
+  }
+
+  let mut form = reqwest::multipart::Form::new().part("file", filepart);
+
+  if let Some(metadata) = metadata {
+    let json = serde_json::to_string(&metadata)?;
+    let metadatapart = reqwest::multipart::Part::text(json).mime_str("application/json")?;
+
+    form = form.part("metadata", metadatapart);
+  }
+
+  let response = reqwest::Client::new()
+    .post(url)
+    .multipart(form)
+    .header("Authorization", authorization)
+    .send()
+    .await?;
+
+  let status = response.status();
+  match status {
+    reqwest::StatusCode::CREATED => Ok(response.text().await?),
+    _ => Err(Error::UnhandledStatus(status)),
+  }
+}
+
 /// This function is lower level than the other **C**R**UD** functions as it
 /// returns a raw `Response` object directly. This allows the response to be used
 /// in proxy functions
