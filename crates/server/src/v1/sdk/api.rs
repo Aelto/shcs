@@ -23,7 +23,7 @@ impl From<reqwest::Error> for Error {
 
 /// Upload the file and get the storage path in return
 pub async fn upload_file(
-  domain: &str, authorization: String, file: tokio::fs::File, filename: Option<String>,
+  domain: &str, authorization: String, file: Vec<u8>, filename: Option<String>,
   metadata: Option<impl serde::Serialize>,
 ) -> Result<String, Error> {
   let url = UrlBuilder::new(domain).ok()?;
