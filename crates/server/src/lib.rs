@@ -1,6 +1,7 @@
 use actix_web::middleware::Logger;
 use actix_web::{App, HttpServer};
 
+use actix_web::web::get;
 use actix_web::web::scope;
 
 pub mod v1;
@@ -23,6 +24,7 @@ pub async fn launch_server(
       .app_data(
         actix_multipart::form::tempfile::TempFileConfig::default().directory(tempfolder.clone()),
       )
+      .route("robots.txt", get().to(robots_txt))
       .service(scope("/v1").configure(v1::router))
   })
   .bind(format!("127.0.0.1:{port}"))?
@@ -30,4 +32,10 @@ pub async fn launch_server(
   .await?;
 
   Ok(())
+}
+
+/// This robots.txt disable everything from being indexed
+async fn robots_txt() -> &'static str {
+  "User-agent: *
+Disallow: /"
 }
