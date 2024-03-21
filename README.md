@@ -38,4 +38,5 @@ being performed.
 | `POST /v1/active/{item}`            | replace or upload a file in the currently active bucket, and with the specified filename | `sdk::Operation::ReplaceActive` |
 | `POST /v1/{bucket}/{item}/metadata` | set file's metadata                                                                      | `sdk::Operation::MetadataSet`   |
 | `GET /v1/{bucket}/{item}/metadata`  | get file's metadata                                                                      | `sdk::Operation::MetadataGet`   |
+| `GET /v1/{bucket}/{item}/alias`  | get file's alias, the name the file had when it was uploaded                                                                      | `sdk::Operation::MetadataGet`   |
 | `DELETE /v1/{bucket}/{item}`        | delete file                                                                              | `sdk::Operation::Delete`        |

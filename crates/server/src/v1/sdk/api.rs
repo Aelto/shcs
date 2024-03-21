@@ -136,6 +136,30 @@ where
   }
 }
 
+pub async fn get_alias(
+  domain: &str, authorization: String, bucket: &str, item: &str,
+) -> Result<String, Error> {
+  let storage_path = storage::internal::storage_path(bucket, item);
+  let url = UrlBuilder::new(domain)
+    .join(&storage_path)
+    .join("alias")
+    .ok()?;
+
+  let res = reqwest::Client::new()
+    .get(url)
+    .header("Authorization", authorization)
+    .send()
+    .await?;
+
+  let status = res.status();
+  let text = res.text().await?;
+  let metadata: String = serde_json::from_str(&text)?;
+  match status {
+    reqwest::StatusCode::OK => Ok(metadata),
+    _ => Err(Error::UnhandledStatus(status)),
+  }
+}
+
 pub async fn delete_file(
   domain: &str, authorization: String, bucket: &str, item: &str,
 ) -> Result<(), Error> {

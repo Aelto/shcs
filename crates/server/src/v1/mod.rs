@@ -48,6 +48,7 @@ pub fn router(cfg: &mut web::ServiceConfig) {
     .route("/{bucket}/{filename}", post().to(replace_file))
     .route("/{bucket}/{filename}/aliased", get().to(serve_aliased_file))
     .route("/{bucket}/{filename}/metadata", get().to(get_file_metadata))
+    .route("/{bucket}/{filename}/alias", get().to(get_file_alias))
     .route("}/{bucket}/{filename}/size", get().to(get_file_size))
     .route(
       "/{bucket}/{filename}/metadata",
@@ -176,6 +177,21 @@ async fn get_file_metadata(
 
   token.complete(&config, identifier).await?;
   Ok(HttpResponse::Ok().json(metadata.and_then(|m| m.custom)))
+}
+
+async fn get_file_alias(
+  path: Path<(String, String)>, token: BearerToken, config: Data<Config>,
+) -> Result<HttpResponse, ApiError> {
+  let identifier = token
+    .authenticate(&config, sdk::Operation::MetadataGet)
+    .await?;
+
+  let (bucket, item) = path.into_inner();
+  let storage_path = storage::internal::storage_path(&bucket, &item);
+  let metadata: Option<Metadata> = storage::deserialize_metadata(&storage_path)?;
+
+  token.complete(&config, identifier).await?;
+  Ok(HttpResponse::Ok().json(metadata.map(|m| m.alias)))
 }
 
 async fn get_file_size(
