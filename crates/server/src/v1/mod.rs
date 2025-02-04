@@ -41,6 +41,10 @@ pub fn router(cfg: &mut web::ServiceConfig) {
   if let Some(limit) = Config::from_disk()
     .ok()
     .and_then(|c| c.multipart_total_limit())
+    .map(|l| {
+      l.try_into()
+        .expect("failure converting the v1::config.multipart_total_limit into a usize")
+    })
   {
     multipart_config = multipart_config.total_limit(limit);
   }

@@ -12,7 +12,7 @@ pub struct Config {
   /// completed operation.
   completion_endpoint: String,
 
-  multipart_total_limit: Option<usize>,
+  multipart_total_limit: Option<i64>,
 }
 
 impl Config {
@@ -27,7 +27,7 @@ impl Config {
     Self::from_disk().map(|c| c.enabled)
   }
 
-  pub fn multipart_total_limit(&self) -> Option<usize> {
+  pub fn multipart_total_limit(&self) -> Option<i64> {
     self.multipart_total_limit
   }
 
