@@ -11,6 +11,8 @@ pub struct Config {
   /// The server sends a POST request to the supplied endpoint to notify of the
   /// completed operation.
   completion_endpoint: String,
+
+  multipart_total_limit: Option<usize>,
 }
 
 impl Config {
@@ -23,6 +25,10 @@ impl Config {
 
   pub fn enabled() -> Result<bool, ApiError> {
     Self::from_disk().map(|c| c.enabled)
+  }
+
+  pub fn multipart_total_limit(&self) -> Option<usize> {
+    self.multipart_total_limit
   }
 
   pub fn authentication_endpoint(&self) -> &str {

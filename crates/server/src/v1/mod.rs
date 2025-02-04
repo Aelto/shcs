@@ -36,10 +36,20 @@ pub fn router(cfg: &mut web::ServiceConfig) {
     return;
   }
 
+  let mut multipart_config = actix_multipart::form::MultipartFormConfig::default();
+
+  if let Some(limit) = Config::from_disk()
+    .ok()
+    .and_then(|c| c.multipart_total_limit())
+  {
+    multipart_config = multipart_config.total_limit(limit);
+  }
+
   cfg
     .app_data(Data::new(
       Config::from_disk().expect("failure reading v1::Config from disk"),
     ))
+    .app_data(actix_web::web::Data::new(multipart_config))
     .route("", put().to(upload_file))
     .route(
       "/active/{filename}",
